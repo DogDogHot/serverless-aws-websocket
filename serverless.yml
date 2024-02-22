@@ -1,0 +1,73 @@
+service: hyunin-test-websocket
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  stage: ${opt:stage, 'dev'}
+  region: ap-northeast-2
+
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:PutItem
+        - dynamodb:Scan
+        - dynamodb:Query
+        - "dynamodb:UpdateItem"
+        - "dynamodb:DeleteItem"
+      Resource: "arn:aws:dynamodb:${self:provider.region}:*:table/*"
+
+resources:
+  Resources:
+    MirrorCityTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: hyunin-websocket-table-test
+        AttributeDefinitions:
+          - AttributeName: "connectionId"
+            AttributeType: "S"
+          - AttributeName: "channel"
+            AttributeType: S
+        KeySchema:
+          - AttributeName: "connectionId"
+            KeyType: "HASH"
+          - AttributeName: "channel"
+            KeyType: "RANGE"
+        BillingMode: PAY_PER_REQUEST
+        GlobalSecondaryIndexes:
+          - IndexName: "channel-index"
+            KeySchema:
+              - AttributeName: "channel"
+                KeyType: "HASH"
+            Projection:
+              ProjectionType: "ALL"
+functions:
+  connect:
+    handler: src/connect.handler
+    events:
+      - websocket:
+          route: $connect
+  joinChannel:
+    handler: src/joinChannel.handler
+    events:
+      - websocket:
+          route: joinchannel
+  leaveChannel:
+    handler: src/leaveChannel.handler
+    events:
+      - websocket:
+          route: leavechannel
+  sendMessage:
+    handler: src/sendMessage.handler
+    events:
+      - websocket:
+          route: sendmessage
+  disconnect:
+    handler: src/disconnect.handler
+    events:
+      - websocket:
+          route: $disconnect
+  default:
+    handler: src/default.handler
+    events:
+      - websocket:
+          route: $default

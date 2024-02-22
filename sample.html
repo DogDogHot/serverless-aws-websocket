@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>WebSocket Test</title>
+    <style>
+      #messages {
+        height: 300px; /* 채팅창 높이 */
+        overflow-y: auto; /* 세로 스크롤 자동 표시 */
+        border: 1px solid #ccc; /* 테두리 추가 */
+        padding: 10px; /* 안쪽 여백 추가 */
+      }
+    </style>
+  </head>
+
+  <body>
+    <h1>WebSocket Test</h1>
+    <div id="messages"></div>
+    <input type="text" id="input-message" onkeydown="handleKeyDown(event)" />
+    <button onclick="sendMessage()">Send</button>
+
+    <script>
+      const webSocketUrl =
+        "wss://9j3o7qkvvi.execute-api.ap-northeast-2.amazonaws.com/dev"
+
+      const socket = new WebSocket(webSocketUrl)
+
+      socket.onopen = function (event) {
+        console.log("WebSocket connected")
+
+        // Send a test message
+        // socket.sen d(
+        //   JSON.stringify({
+        //     action: "test",쩨
+        //     channel: "global",
+        //     message: inputMessage,
+        //   })
+        //
+      }
+
+      socket.onmessage = function (event) {
+        console.log("WebSocket message received:", event.data)
+        const time = `${padWithZero(new Date().getHours())}:${padWithZero(
+          new Date().getMinutes()
+        )}:${padWithZero(new Date().getSeconds())}`
+        const message =
+          typeof event.data === "string" ? event.data : JSON.parse(event.data)
+
+        if (message.action === "test") {
+          // Display the test message
+          const messagesDiv = document.getElementById("messages")
+          messagesDiv.innerHTML += `<p>상대방 : ${message} - ${time}</p>`
+        }
+        console.log(message.action)
+        const messagesDiv = document.getElementById("messages")
+        messagesDiv.innerHTML += `<p>상대방 : ${message} - ${time}</p>`
+
+        messagesDiv.scrollTop = messagesDiv.scrollHeight
+      }
+
+      function sendMessage() {
+        const inputMessage = document.getElementById("input-message").value
+        const messagesDiv = document.getElementById("messages")
+        // get hour and minute format 00:00 시간과 초는 2자리가 아니라 1자리일수있는데 이때는 앞에 0으로 붙여줘야함.
+        const time = `${padWithZero(new Date().getHours())}:${padWithZero(
+          new Date().getMinutes()
+        )}:${padWithZero(new Date().getSeconds())}`
+
+        messagesDiv.innerHTML += `<p>나 : ${inputMessage}  - ${time}</p>`
+
+        // Send the input message
+        socket.send(
+          JSON.stringify({
+            action: "sendmessage",
+            channel: "global",
+            message: inputMessage,
+          })
+        )
+
+        // Clear the input field
+        document.getElementById("input-message").value = ""
+
+        // Scroll to bottom
+        messagesDiv.scrollTop = messagesDiv.scrollHeight
+      }
+      function handleKeyDown(event) {
+        if (event.key === "Enter") {
+          sendMessage()
+        }
+      }
+      function padWithZero(num) {
+        return num < 10 ? "0" + num : num
+      }
+    </script>
+  </body>
+</html>
